@@ -1,1 +1,758 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GFR (Chapter 9) Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom animation for fading in new questions */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        /* Hide arrows from number input */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4 sm:p-6">
+
+    <div class="text-center mb-6">
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Grants-in-Aid and Loans Quiz</h1>
+        <h2 id="quiz-subtitle" class="text-md sm:text-lg text-gray-600 mt-1"></h2>
+    </div>
+
+    <div id="quiz-container" class="bg-white w-full max-w-3xl rounded-2xl shadow-lg p-6 sm:p-8">
+        <!-- Quiz Header -->
+        <div id="quiz-header" class="mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <p class="text-lg font-semibold">Score: <span id="score" class="text-indigo-600">0</span></p>
+                <button id="reset-score-btn" class="text-sm bg-red-100 text-red-700 hover:bg-red-200 font-medium py-1 px-3 rounded-lg transition-colors">Reset Score</button>
+            </div>
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+                 <p class="font-medium">Question <span id="question-number">1</span> of <span id="total-questions"></span></p>
+                <div class="flex items-center gap-2">
+                    <label for="jump-input" class="text-sm font-medium">Jump to:</label>
+                    <input type="number" id="jump-input" class="w-20 border border-gray-300 rounded-lg p-2 text-center focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <button id="jump-btn" class="bg-gray-600 text-white hover:bg-gray-700 font-medium py-2 px-4 rounded-lg transition-colors">Go</button>
+                </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Question Area -->
+        <div id="question-area">
+            <h2 id="question-text" class="text-xl sm:text-2xl font-semibold text-gray-800 mb-6 min-h-[80px]"></h2>
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <!-- Options will be dynamically inserted here -->
+            </div>
+            <p id="feedback-message" class="text-center font-medium my-4 min-h-[24px]"></p>
+            <div class="flex justify-between items-center mt-6">
+                <button id="prev-btn" class="bg-gray-200 text-gray-700 hover:bg-gray-300 font-bold py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">← Previous</button>
+                <div id="next-btn-container" class="hidden">
+                     <button id="next-btn" class="bg-indigo-600 text-white hover:bg-indigo-700 font-bold py-2 px-6 rounded-lg transition-transform transform hover:scale-105">Next →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden text-center py-10">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Quiz Completed!</h2>
+            <p id="final-score" class="text-xl mb-8">Your final score is 0 out of 0.</p>
+            <button id="restart-btn" class="bg-indigo-600 text-white hover:bg-indigo-700 font-bold py-3 px-8 rounded-lg text-lg transition-transform transform hover:scale-105">Restart Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DATA ---
+            const quizData = [
+                {
+                    question: "As a general principle Grants-in-aid can be given to a person or a public body or an institution having a",
+                    options: ["distinct legal entity", "sound financial position", "credible performance record", "substantial working force"],
+                    answer: "distinct legal entity"
+                },
+                {
+                    question: "No new autonomous institutions should be created by Ministries or Departments without the approval of the",
+                    options: ["Parliament", "President", "Cabinet", "Finance Minister"],
+                    answer: "Cabinet"
+                },
+                {
+                    question: "Regional Centres/Offices/Sub-Stations of any autonomous body can be created with prior approval of the administrative ministry in consultation with",
+                    options: ["CGA", "CCA", "Niti Aayog", "Ministry of Finance"],
+                    answer: "Ministry of Finance"
+                },
+                {
+                    question: "The Ministry or Department create a Corpus Fund out of budgetary allocation for an Autonomous Body only with prior concurrence of",
+                    options: ["CGA", "CCA", "Niti Aayog", "Ministry of Finance"],
+                    answer: "Ministry of Finance"
+                },
+                {
+                    question: "In case of a Corpus Fund created out of internal resource, the approval to be obtained from",
+                    options: ["Financial Advisor", "Administrative Ministry", "Chief Controller of Accounts", "CGA"],
+                    answer: "Administrative Ministry"
+                },
+                {
+                    question: "Governing Body of the Autonomous Body shall review user charges/ sources of internal revenue generation at least once",
+                    options: ["a year", "a two years", "a three years", "a five years"],
+                    answer: "a three years"
+                },
+                {
+                    question: "Review of user charges/sources of internal revenue generation should be informed to administrative Ministry",
+                    options: ["before the formulation of Union Annual Budget.", "by end of next financial year", "by September", "by September of following year"],
+                    answer: "by September"
+                },
+                {
+                    question: "Who will be responsible for overall financial management of the autonomous bodies?",
+                    options: ["the Financial Advisor", "the Chief Executive Officer", "the Governing Board", "the Administrative Ministry/Department"],
+                    answer: "the Chief Executive Officer"
+                },
+                {
+                    question: "Depending on the size and nature of activity of autonomous organisations, Ministry shall put in place a system of external or internal peer review of autonomous organisations",
+                    options: ["every one or two year", "every two or three year", "every three or four year", "every three or five years"],
+                    answer: "every three or five years"
+                },
+                {
+                    question: "Autonomous organisations as also others should be required to enter into a Memorandum of Understanding with the Administrative Ministry or Department with a budgetary support of",
+                    options: ["more than Rupees five crores per annum", "less than Rupees ten crore per annum", "more than Rupees ten crore per annum", "more than Rupees two crore per annum"],
+                    answer: "more than Rupees five crores per annum"
+                },
+                {
+                    question: "Findings of the peer review should be examined and put up for appropriate decision by the concerned programme division of the Administrative Department to the",
+                    options: ["Secretary, Department of Expenditure, Ministry of Finance", "Secretary of the Administrative Department.", "Financial Advisor of the Administrative Department", "Union Cabinet"],
+                    answer: "Secretary of the Administrative Department."
+                },
+                {
+                    question: "Grant is classified into",
+                    options: ["Recurring and Non-recurring Grants", "Capital and Revenue Grants", "Plan and non-plan Grants", "National and International Grants"],
+                    answer: "Recurring and Non-recurring Grants"
+                },
+                {
+                    question: "The orders of Grant shall specify the time limit within which the Grant or each instalment of it, is to be spent in case of",
+                    options: ["Recurring Grants", "Non-recurring Grants", "Capital Grants", "Revenue Grants"],
+                    answer: "Non-recurring Grants"
+                },
+                {
+                    question: "When recurring Grants-in-aid are sanctioned to the same Institution or Organisation for the same purpose, the unspent balance of the previous Grant should not be taken into account in sanctioning the subsequent Grant.",
+                    options: ["True", "False"],
+                    answer: "False"
+                },
+                {
+                    question: "Cash balance of an autonomous organisation at a time should preferably not be",
+                    options: ["more than 2 months of requirements", "more than 3 months of requirements", "more than 4 months of requirements", "more than 6 months of requirements"],
+                    answer: "more than 3 months of requirements"
+                },
+                {
+                    question: "All interests or other earnings against Grants in aid or advances (other than reimbursement) released to any Grantee institution should be",
+                    options: ["utilised for internal purpose", "allowed to be adjusted against future releases", "mandatorily remitted to the Consolidated Fund of India immediately after finalization of the accounts.", "disposed of after having obtained the approval of Ministry of Finance."],
+                    answer: "mandatorily remitted to the Consolidated Fund of India immediately after finalization of the accounts."
+                },
+                {
+                    question: "Assets acquired by Non-Government or Quasi-Government Institutions or Organisations wholly or substantially out of Government shall not be disposed of without obtaining the prior approval of the",
+                    options: ["Authority which sanctioned the Grants-in-aid.", "Governing Body of such Non-Government or Quasi-Government Institutions or Organisations", "Ministry of Finance", "CEOs of Non-Government or Quasi-Government Institutions or Organisations"],
+                    answer: "Authority which sanctioned the Grants-in-aid."
+                },
+                {
+                    question: "Pick the incorrect one",
+                    options: ["the release of the last instalment of the Annual Grant must be conditional upon the Grantee Institutions providing reasonable evidence of proper utilization of instalments released earlier.", "In the cases where Central Financial Assistance (CFA) has been sanctioned, the grant will be released in one instalment upon the Grantee Institutions/ Organisation providing complete evidence of achieving the specified objectives and expenditure incurred supported by Audited Statement of Expenditure.", "In these cases, the grantee institutions will not be required to submit Utilization Certificates.", "None of the above (All of the above are correct)"],
+                    answer: "In these cases, the grantee institutions will not be required to submit Utilization Certificates."
+                },
+                {
+                    question: "The Grantee Institutions, to submit their requirement with supporting details by the",
+                    options: ["end of September in the year preceding the year for which the Grants-in-aid is sought", "end of October in the year preceding the year for which the Grants-in-aid is sought", "beginning of financial year of preceding the year for which the Grants-in-aid is sought", "end of financial year of preceding the year for which the Grants-in-aid is sought"],
+                    answer: "end of October in the year preceding the year for which the Grants-in-aid is sought"
+                },
+                {
+                    question: "The Institution or Organisation should be informed of the result of their requests for Grant by",
+                    options: ["by December of the year", "March of the succeeding year", "April of the succeeding year", "June of the succeeding year."],
+                    answer: "April of the succeeding year"
+                },
+                {
+                    question: "All Grantee Institutions or Organisations should ordinarily formulate terms and conditions of service of their employees which are, by and large, not higher than those applicable to similar categories of employees in Central Government which receive",
+                    options: ["more than 50% of their recurring expenditure in the form of Grants-in-aid", "more than 50% of their non-recurring expenditure in the form of Grants-in-aid", "more than 75% of their recurring expenditure in the form of Grants-in-aid", "more than 75% of their non-recurring expenditure in the form of Grants-in-aid"],
+                    answer: "more than 50% of their recurring expenditure in the form of Grants-in-aid"
+                },
+                {
+                    question: "All Grantee Institutions or Organisations receiving substantial grants from Government should formulate terms and conditions of service of their employees which are, under any circumstance, not higher than those applicable to similar categories of employees in Central Government.",
+                    options: ["True", "False"],
+                    answer: "False"
+                },
+                {
+                    question: "In all cases of buildings constructed with Grants-in-aid, responsibility of maintenance of such buildings shall be of the",
+                    options: ["Ministry/Department concerned", "CPWD", "Grantee Institution or Organisation", "Any of the as decided by the Govt."],
+                    answer: "Grantee Institution or Organisation"
+                },
+                {
+                    question: "Grants-in-aid may be sanctioned to meet the bonafide expenditure incurred",
+                    options: ["not earlier than 6 months prior to the date of issue of the sanction", "not earlier than 9 months prior to the date of issue of the sanction", "not earlier than a year prior to the date of issue of the sanction", "not earlier than 2 years prior to the date of issue of the sanction"],
+                    answer: "not earlier than a year prior to the date of issue of the sanction"
+                },
+                {
+                    question: "The stipulation in regard to refund of the un-utilised amount of Grant-in-aid with interest thereon should be brought out clearly in the letter sanctioning the Grant as well as in the bond so required to be executed.",
+                    options: ["True", "False"],
+                    answer: "True"
+                },
+                {
+                    question: "Pick the correct regarding precondition to the sanction of Grants-in-aid to the agencies",
+                    options: ["the recipient body employs more than twenty-five persons on a regular basis and at least fifty per cent of its recurring expenditure is met from Grants-in-aid from Central Government", "the body is a registered society or a co-operative institution and is in receipt of a general purpose annual Grants-in-aid of Rupees fifty lakhs and above from the Consolidated Fund of India", "the terms and conditions under which the Grants-in-aid are given, should provide for reservation for SC and ST or OBC in posts and services under such organizations or agencies", "All of the above"],
+                    answer: "the terms and conditions under which the Grants-in-aid are given, should provide for reservation for SC and ST or OBC in posts and services under such organizations or agencies"
+                },
+                {
+                    question: "The approved administrative expenditure on pay and allowances of the personnel of the voluntary organisation should not exceed",
+                    options: ["10% of Grant-in-aid", "25% of Grant-in-aid", "50% of Grant-in-aid", "75% of Grant-in-aid"],
+                    answer: "25% of Grant-in-aid"
+                },
+                {
+                    question: "Pick the incorrect one",
+                    options: ["In the event of the Grantee failing to comply with the conditions or committing breach of the conditions of the Bond, the signatories to the Bond shall be jointly and severally liable to refund to the President of India, the whole or a part amount of the Grant with interest at 10% per annum thereon or the sum specified under the Bond.", "The stamp duty for this Bond shall be borne by the Grantee Institution.", "Execution of Bond will not apply to Quasi-Government Institutions, Central Autonomous Organisations and Institutions whose budget is approved by the Government.", "None of the above (All of the above are correct)"],
+                    answer: "The stamp duty for this Bond shall be borne by the Grantee Institution."
+                },
+                {
+                    question: "A post-completion review of every Centrally Sponsored Scheme should be undertaken by",
+                    options: ["Ministries/Departments concerned of Central Government", "State Government/Union Territories", "Nodal Executing agencies such CPWD, National Highway Authority etc", "Central and State Government/UTs jointly."],
+                    answer: "Ministries/Departments concerned of Central Government"
+                },
+                {
+                    question: "If the assets of a sponsored project/scheme are to be sold, the proceeds therefrom should be",
+                    options: ["credited to the account of the sponsoring Departments/Organisations.", "credited to the account of the Organisations/Institutions executed project/scheme", "credited to the Consolidated fund of India", "Jointly shared by sponsoring Departments/Organisations and executing institutions"],
+                    answer: "credited to the account of the sponsoring Departments/Organisations."
+                },
+                {
+                    question: "A Register of Grants shall be maintained by the sanctioning authority in Form",
+                    options: ["GFR 18", "GFR 19", "GFR 20", "GFR 21"],
+                    answer: "GFR 21"
+                },
+                {
+                    question: "The accounts of all Grantee Institutions or Organisations shall be open to inspection by the sanctioning authority and audit, both by the C&AG under the provision of CAG(DPC) Act 1971 and internal audit by",
+                    options: ["the Principal Accounts Office of the Ministry or Department", "externally hired Chartered Accountants", "Department of Expenditure, Ministry of Finance", "Grantee Institutions themselves"],
+                    answer: "the Principal Accounts Office of the Ministry or Department"
+                },
+                {
+                    question: "Pick the correct one. The accounts of the Grantee Institution or Organisation shall be audited by the C&AG under Section 14 of the C&AG's DPC Act, 1971, if the Grants or loans to the institution in a financial year (i) are not less than Rupees 25 lakh (ii) not less than seventy-five percent of the total expenditure of the Institution (iii) The accounts may also be audited by the Comptroller and Auditor General of India if the Grants or loans in a financial year are not less than Rupees one crore. (iv) Where the accounts are so audited by the Comptroller and Auditor General of India in a financial year, he shall continue to audit the accounts for a further period of three years notwithstanding that the conditions outlined above are not fulfilled.",
+                    options: ["i, ii and iv", "i, iii and iv", "i, ii and iiii", "All of the above"],
+                    answer: "All of the above"
+                },
+                {
+                    question: "Where any Grant and/or loan is given for any specific purpose to any Institution or Organisation or authority, not being a foreign State or international Body/Organization, the CAG, to scrutinize the procedures by which the sanctioning authority satisfies itself as to the fulfillment of the conditions subject to which such Grants and/or loans were given and shall, for this purpose, have right of access to the books and accounts of that Institute or Organisation or authority under",
+                    options: ["Section 15 (1) of the CAG's (DPC) Act, 1971", "Section 15 (2) of the CAG's (DPC) Act, 1971", "Section 16 (1) of the CAG's (DPC) Act, 1971", "Section 16 (2) of the CAG's (DPC) Act, 1971"],
+                    answer: "Section 15 (1) of the CAG's (DPC) Act, 1971"
+                },
+                {
+                    question: "Where the C&AG is the sole auditor for a local Body or Institution, unless specifically waived by Government auditing charges will be payable by the",
+                    options: ["Administrative Ministry/Department", "auditee Institution in full", "IA&AD", "Department of Expenditure, MoF"],
+                    answer: "auditee Institution in full"
+                },
+                {
+                    question: "Approved and authenticated annual accounts to be made available by the Autonomous Body to the concerned Audit Office and commencement of audit of annual accounts",
+                    options: ["30th April", "31st May", "30th June", "30th September"],
+                    answer: "30th June"
+                },
+                {
+                    question: "Issue of the final SAR in English version with audit certificate to Autonomous Body/ Government concerned",
+                    options: ["30th September", "31st October", "30th November", "31st December"],
+                    answer: "31st October"
+                },
+                {
+                    question: "Submission of the Annual Report and Audited Accounts to the Nodal Ministry/Department for it to be laid on the Table of the Parliament",
+                    options: ["30th September", "31st October", "30th November", "31st December"],
+                    answer: "31st December"
+                },
+                {
+                    question: "Utilisation Certificate has been referred to in GFR 2017 under Rule",
+                    options: ["235", "237", "238", "242"],
+                    answer: "238"
+                },
+                {
+                    question: "Utilisation Certificate shall be submitted in Form",
+                    options: ["11A", "12A", "14A", "15A"],
+                    answer: "12A"
+                },
+                {
+                    question: "Where Utilization certificate is not received from the Grantee within the prescribed time, the Ministry or Department will be at liberty to blacklist such Institution or Organisation from any future grant, subsidy or other type of financial support from the Government.",
+                    options: ["True", "False"],
+                    answer: "True"
+                },
+                {
+                    question: "Release of Grants-in-aid in excess of ___ of the total amount sanctioned for the subsequent financial year shall be done only after utilisation certificate and the annual audited statement relating to Grants-in-aid released in the preceding year are submitted to the satisfaction of the Ministry/Department concerned.",
+                    options: ["25%", "50%", "75%", "90%"],
+                    answer: "75%"
+                },
+                {
+                    question: "All the Ministries or Departments should include in their Annual Report a statement for the information of Parliament where Private and Voluntary Organizations receiving recurring Grants-in-aid",
+                    options: ["Rs. 10 lakh to less than Rs. 25 lakh", "Rs. 10 lakh to less than Rs. 50 lakh", "Rs. 20 lakh to less than Rs. 50 lakh", "Rs. 20 lakh to less than Rs. 1 crore"],
+                    answer: "Rs. 10 lakh to less than Rs. 50 lakh"
+                },
+                {
+                    question: "The Annual Reports and accounts of Private and Voluntary Organizations should be laid on the Table of the House where these organisations are receiving recurring Grants-in-aid to the tune of",
+                    options: ["Rs. 20 lakh & above", "Rs. 25 lakh & above", "Rs. 50 lakh & above", "Rs. 1 crore & above"],
+                    answer: "Rs. 1 crore & above"
+                },
+                {
+                    question: "Where applicable the Annual Reports and accounts of Private and Voluntary Organizations should be laid on the Table of the House within (whether recurring or non-recurring grant)",
+                    options: ["6 months of the close of Financial Year", "9 months of the close of Financial Year", "6 months of the close of the succeeding financial year", "9 months of the close of the succeeding financial year"],
+                    answer: "9 months of the close of the succeeding financial year"
+                },
+                {
+                    question: "All the Ministries or Departments should include in their Annual Report a statement for the information of Parliament where Private and Voluntary Organizations receiving one-time assistance or non-recurring Grants as Grants-in-aid",
+                    options: ["Rs. 10 lakh to up-to Rs. 25 lakh", "Rs. 10 lakh to up-to Rs. 50 lakh", "Rs. 20 lakh to up-to Rs. 50 lakh", "Rs. 20 lakh to up-to Rs. 1 crore"],
+                    answer: "Rs. 10 lakh to up-to Rs. 50 lakh"
+                },
+                {
+                    question: "The Annual Reports and accounts of Private and Voluntary Organizations should be laid on the Table of the House where these organisations are receiving one-time assistance or non-recurring Grants as Grants-in-aid",
+                    options: ["Rs. 20 lakh & above", "Rs. 25 lakh & above", "Rs. 50 lakh & above", "Rs. 1 crore & above"],
+                    answer: "Rs. 1 crore & above"
+                },
+                {
+                    question: "In respect of the Scheme Utilization Certificate is submitted to Central Government by State Government is Form",
+                    options: ["GFR 12 C", "GFR 14 C", "GFR 15", "GFR 16"],
+                    answer: "GFR 12 C"
+                },
+                {
+                    question: "UC given by the State Government should be counter-signed by the",
+                    options: ["Minister, Finance Department", "Chief Secretary", "Administrative Secretary of the Division regulating the Scheme/Finance Secretary", "None of the above"],
+                    answer: "Administrative Secretary of the Division regulating the Scheme/Finance Secretary"
+                },
+                {
+                    question: "When Central Grants are given to State Governments for expenditure to be incurred by them through local bodies or private institutions, the Utilization Certificates should be furnished by",
+                    options: ["the local bodies or private institutions", "the State Government", "jointly by local bodies or private institution and State Government", "No UC required."],
+                    answer: "the State Government"
+                },
+                {
+                    question: "The Grantee Institutions or Organisations should be required to submit performance cum achievement reports soon after the end of the financial year, and in any case, not later than",
+                    options: ["3 months after the close of FY", "6 months after the close of FY", "9 months after the close of FY", "a year after the close of FY"],
+                    answer: "6 months after the close of FY"
+                },
+                {
+                    question: "performance-cum-achievement reports invariably be obtained with regard to non-recurring Grants such as those meant for celebration of anniversaries, conduct of special tours and maintenance Grants for education.",
+                    options: ["True", "False"],
+                    answer: "False"
+                },
+                {
+                    question: "Submission of performance- cum-achievement reports may be dispensed with by the sanctioning authority in cases where Grant-in-aid does not exceed",
+                    options: ["Rs. 10 lakh", "Rs. 15 lakh", "Rs. 20 lakh", "Rs. 25 lakh"],
+                    answer: "Rs. 25 lakh"
+                },
+                {
+                    question: "Sanctioning authority may grant discretionary grant for either recurring or non-recurring purposes but such grant should not involve any future commitment.",
+                    options: ["True", "False"],
+                    answer: "True"
+                },
+                {
+                    question: "Grants-in-aid for provision of amenities or of recreational or welfare facilities to the staff of the offices of the Government are regulated under orders of the",
+                    options: ["Ministry of Home Affairs", "Ministry of Finance", "DOPT", "Ministry of Social Welfare"],
+                    answer: "Ministry of Finance"
+                },
+                {
+                    question: "Pick the incorrect one.",
+                    options: ["The Grant in aid will be admissible on the basis of the total strength borne on the regular strength of an organization, i.e., Ministry or Department, etc., and its Attached and Subordinate Offices and such statutory bodies whose budget forms part of Consolidated Fund of India", "Staff paid from contingencies, work charged staff etc., will also be taken into calculation for this purpose.", "Grant-in-aid in respect of Gazetted Officers will be admissible only to that Ministry or Department or Office where membership of recreation club is open to such officers.", "None of the above."],
+                    answer: "Staff paid from contingencies, work charged staff etc., will also be taken into calculation for this purpose."
+                },
+                {
+                    question: "The rate of the Grant-in-aid per head per annum",
+                    options: ["Rs. 20", "Rs. 40", "Rs. 50", "Rs. 80"],
+                    answer: "Rs. 50"
+                },
+                {
+                    question: "To match the subscriptions collected during the previous financial year by the existing staff clubs an additional Grant-in-aid will be admissible up to Rupees (per head per annum)",
+                    options: ["Rs. 10", "Rs. 15", "Rs. 20", "Rs. 25"],
+                    answer: "Rs. 25"
+                },
+                {
+                    question: "In the case of staff clubs which are started during the financial year in which Grant-in-aid is to be given, an additional matching grants-in-aid up to match the subscription collected by such clubs up to the date on which the proposal for the Grant is mooted, may be sanctioned up-to Rupees (per head/pa)",
+                    options: ["Rs. 10", "Rs. 15", "Rs. 20", "Rs. 25"],
+                    answer: "Rs. 25"
+                },
+                {
+                    question: "The total strength of the eligible staff will be that existing on the",
+                    options: ["31st March", "30th April", "30th June", "30th September"],
+                    answer: "31st March"
+                },
+                {
+                    question: "In the case of new staff clubs the total strength of the eligible staff will be that existing on the",
+                    options: ["31st March of preceding year", "30th September preceding year", "date on which proposal for Grant is mooted", "date on which proposal for Grant is sanctioned"],
+                    answer: "date on which proposal for Grant is mooted"
+                },
+                {
+                    question: "A maximum one-time Grant for setting up of a Recreation Club is",
+                    options: ["Rs. 25000", "Rs. 50000", "Rs. 75000", "Rs. 100000"],
+                    answer: "Rs. 100000"
+                },
+                {
+                    question: "The accounts of recreational clubs for the preceding year duly audited by an Internal Auditor should be obtained immediately by the Ministry or Department before allocating funds for the next financial year after the close of the financial year in any case by the (following year)",
+                    options: ["30th April", "31st May", "30th June", "31st July"],
+                    answer: "31st July"
+                },
+                {
+                    question: "The nodal division in the to finalize terms and conditions of loans by the Central Government is",
+                    options: ["Budget Division, Department of Expenditure, Ministry of Finance", "Budget Division, Department of Economic Affairs, Ministry of Finance", "Niti Aayog", "Finance Commission"],
+                    answer: "Budget Division, Department of Economic Affairs, Ministry of Finance"
+                },
+                {
+                    question: "Interest for the full period (half-year or full year, as the case may be) shall be payable if the payment of the instalment is made in advance of the due date by",
+                    options: ["14 days or less", "15 days or less", "20 days or less", "30 days or less"],
+                    answer: "14 days or less"
+                },
+                {
+                    question: "When the due date of repayment of any instalment of principal or interest falls on a Sunday or a public holiday, the due date will be",
+                    options: ["working day preceding Sunday or public holiday", "next working day", "End of that particular month in which due date falls", "Any of the above as decided by sanctioning authority while sanctioning the grant/loan."],
+                    answer: "next working day"
+                },
+                {
+                    question: "If an instalment of principal or interest is payable on the 31st March of a year, and if that day happens to be a public holiday, the due date will be",
+                    options: ["First working day of April of following year", "working day preceding public holiday", "by the end of April of following year", "Any of the above as decided by sanctioning authority while sanctioning the grant/loan"],
+                    answer: "working day preceding public holiday"
+                },
+                {
+                    question: "The payment of interest and the repayment of principal of a loan are always to be made with reference to the calendar date on which the loan",
+                    options: ["proposal mooted", "sanctioned", "paid to the borrower", "withdrawn by the borrower from his accounts"],
+                    answer: "withdrawn by the borrower from his accounts"
+                },
+                {
+                    question: "In the case of a loan sanctioned by the Central Government to a State Government on or before 31st March of a year, which is adjusted in the books of the Reserve Bank of India in the month of April of following year the instalment of principal and/or interest shall fall due for payment on the 31st March of the succeeding year",
+                    options: ["True", "False"],
+                    answer: "True"
+                },
+                {
+                    question: "In regard to cases where adjustment in the books of the Accounts Offices are only involved and actual credit through the Reserve Bank of India is not necessary, the date of drawal of loan for purposes of repayment and charging interest shall be",
+                    options: ["the first date of the month of account in which the adjustment is effected", "the last date of the month of account in which the adjustment is effected", "the last date of the Financial year which the adjustment is effected", "the first date of following financial year."],
+                    answer: "the first date of the month of account in which the adjustment is effected"
+                },
+                {
+                    question: "The Principal Accounts Officers or Pay and Accounts Officers s, shall issue notices in Form GFR-19 to the loanees (other than State and Union Territory Governments) i.e. Public Sector Undertakings, statutory bodies and Government institutions etc. where",
+                    options: ["the detailed accounts of loan is maintained by PAO", "amount involved is more than Rs. 50 lakh", "amount has been unpaid for the last 6 months", "administrative Ministry/department has authorised PAO to do so.71."],
+                    answer: "the detailed accounts of loan is maintained by PAO"
+                },
+                {
+                    question: "The Principal Accounts Officers or Pay and Accounts Officers s, shall issue notices in Form GFR-19 to the loanees",
+                    options: ["15 days in advance from due date", "one month in advance from due date", "2 months in advance from due date", "3 months in advance from due date."],
+                    answer: "2 months in advance from due date"
+                },
+                {
+                    question: "Before approving the loan, the applicant shall be asked to furnish copies of profit and loss (or income and expenditure) accounts and balance sheets for the last",
+                    options: ["2 years", "3 years", "4 years", "5 years"],
+                    answer: "3 years"
+                },
+                {
+                    question: "Value of the security offered against the loan should be at least",
+                    options: ["thirty-three and one-third per cent of the loan amount", "100% of loan value", "thirty-three and one-third per cent above the amount of the loan", "50% the amount of the loan"],
+                    answer: "thirty-three and one-third per cent above the amount of the loan"
+                },
+                {
+                    question: "A loan shall bear interest for the day of payment as well as day of repayment.",
+                    options: ["True", "False"],
+                    answer: "False"
+                },
+                {
+                    question: "A written undertaking shall be obtained from a wholly Government-owned company at the time of sanctioning the loan.in Form",
+                    options: ["GFR 12", "GFR 13", "GFR 14", "GFR 15"],
+                    answer: "GFR 14"
+                },
+                {
+                    question: "Who will primarily be responsible for certifying to the Accounts Officer regarding fulfilment of the conditions attaching to the loan",
+                    options: ["The loanee institution", "Head of administrative Ministry/Department", "Ministry of Finance", "Sanctioning authority"],
+                    answer: "Sanctioning authority"
+                },
+                {
+                    question: "A Certificate of Utilization of the loan shall be furnished to the Accounts Officer in every case of loan made for specific purposes, even if of the any conditions is not specifically attached to the grant.",
+                    options: ["True", "False"],
+                    answer: "True"
+                },
+                {
+                    question: "Utilization Certificates by the Department concerned to the Accounts Officer shall be submitted",
+                    options: ["not later than 12 months from the date of sanction of the loan.", "not later than 18 months from the date of sanction of the loan", "not later than 12 months from the close of financial year in which loan sanctioned.", "not later than 18 months from the close of financial year in which loan sanctioned."],
+                    answer: "not later than 18 months from the date of sanction of the loan"
+                },
+                {
+                    question: "When a loan of public money is taken out in instalments each instalment of the loan so drawn shall be treated as a separate loan for purposes of repayment of principal and payment of interest thereon except where the various instalments drawn during a financial year are, for this purpose, allowed to be consolidated into a single loan as at the end of that particular financial year.",
+                    options: ["True", "False"],
+                    answer: "True"
+                },
+                {
+                    question: "The penal or the higher rate of interest, as the case may be, shall not, except under special orders of Government, be less than",
+                    options: ["2% per annum above the normal rate of interest", "2.5% per annum above the normal rate of interest", "3% per annum above the normal rate of interest", "5% per annum above the normal rate of interest"],
+                    answer: "2.5% per annum above the normal rate of interest"
+                },
+                {
+                    question: "Any default in the payment of interest upon a loan or in the repayment of principal where details of accounts of loan is maintained by Accounts Officer, shall be promptly reported by him to",
+                    options: ["Principal Accounts Officer", "Loanee Institution", "Ministry of Finance", "sanctioning authority."],
+                    answer: "sanctioning authority."
+                },
+                {
+                    question: "Pick the incorrect one",
+                    options: ["The event of any default in repayment in the case of grant of interest free loans, interest at prescribed rates will be chargeable on the loans.", "In the case of loans sanctioned at concessional rates of interest the difference between the normal rate and concessional rate), shall be made conditional upon prompt repayments of principal and payment of interest thereon by the entity concerned.", "In the cases where in addition to interest free loans, subsidy is also provided to meet running expenses the sanction letter shall provide that in the event of any default in repayment, the defaulted dues would be recovered out of the subsidy payable.", "None of the above"],
+                    answer: "None of the above"
+                },
+                {
+                    question: "A competent authority may remit or write off any loans owing to their irrecoverability or otherwise, after prior approval of the",
+                    options: ["Ministry of Finance", "Administrative Ministry/Department", "Accounts Officer", "Parliament"],
+                    answer: "Ministry of Finance"
+                },
+                {
+                    question: "Detailed accounts of loans to Institutions and Organizations, etc., shall be maintained by the Accounts Officer who shall watch their recovery and see that the conditions attached to each loan are fulfilled Subject to such general or specific directions as may be given by the",
+                    options: ["Administrative Ministry/Department", "Ministry of Finance", "C&AG", "Principal Accounts Officer"],
+                    answer: "C&AG"
+                },
+                {
+                    question: "Each Principal Accounts Officer shall submit a statement showing the details of outstanding Central Loans borne on his books as on 31st March each year to the",
+                    options: ["concerned Ministry or Department", "C&AG", "Ministry of Finance", "Chief Controller of Accounts of concerned Ministry or Department"],
+                    answer: "Ministry of Finance"
+                },
+                {
+                    question: "The above statement is submitted in Form",
+                    options: ["GFR 11", "GFR 12", "GFR 13", "GFR 14"],
+                    answer: "GFR 14"
+                },
+                {
+                    question: "This statement in GFR 13 shall be submitted not later than the",
+                    options: ["30th April of following year", "30th June of following year", "30th September of following year", "31st December of following year"],
+                    answer: "30th June of following year"
+                },
+                {
+                    question: "The Administrative Ministries shall keep watch over the receipt of the Annual Statements regularly from the Accounts Office in Form",
+                    options: ["GFR 20", "GFR 19", "GFR 18", "GFR 17"],
+                    answer: "GFR 17"
+                },
+                {
+                    question: "A copy of Annual Assessment Report on status of all outstanding loans, including timely and accurate payment of principal and interest due, shall be submitted by the Financial Advisor of the Administrative Ministry concerned by 30th June of each financial year to",
+                    options: ["concerned Ministry or Department", "C&AG", "Ministry of Finance", "Chief Controller of Accounts of concerned Ministry or Department"],
+                    answer: "Ministry of Finance"
+                }
+            ];
+
+            // --- STATE ---
+            let currentQuestionIndex = 0;
+            let score = 0;
+            let userAnswers = new Array(quizData.length).fill(null);
+
+            // --- SELECTORS ---
+            const quizSubtitle = document.getElementById('quiz-subtitle');
+            const questionNumberEl = document.getElementById('question-number');
+            const totalQuestionsEl = document.getElementById('total-questions');
+            const progressBar = document.getElementById('progress-bar');
+            const questionTextEl = document.getElementById('question-text');
+            const optionsContainer = document.getElementById('options-container');
+            const feedbackMessageEl = document.getElementById('feedback-message');
+            const scoreEl = document.getElementById('score');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const nextBtnContainer = document.getElementById('next-btn-container');
+            const jumpInput = document.getElementById('jump-input');
+            const jumpBtn = document.getElementById('jump-btn');
+            const resetScoreBtn = document.getElementById('reset-score-btn');
+            const restartBtn = document.getElementById('restart-btn');
+            const quizContainer = document.getElementById('quiz-container');
+            const quizHeader = document.getElementById('quiz-header');
+            const questionArea = document.getElementById('question-area');
+            const resultScreen = document.getElementById('result-screen');
+            const finalScoreEl = document.getElementById('final-score');
+
+            // --- FUNCTIONS ---
+            function startQuiz() {
+                totalQuestionsEl.textContent = quizData.length;
+                quizSubtitle.textContent = `Complete ${quizData.length} Questions - Exam Preparation Tool`;
+                jumpInput.max = quizData.length;
+                jumpInput.min = 1;
+                loadQuestion(currentQuestionIndex);
+            }
+
+            function loadQuestion(index) {
+                // Clear previous question's state
+                feedbackMessageEl.textContent = '';
+                feedbackMessageEl.className = 'text-center font-medium my-4 min-h-[24px]';
+                nextBtnContainer.classList.add('hidden');
+                
+                // Animate question area
+                questionArea.classList.remove('fade-in');
+                void questionArea.offsetWidth; // Trigger reflow
+                questionArea.classList.add('fade-in');
+
+                const question = quizData[index];
+                questionTextEl.textContent = question.question;
+                optionsContainer.innerHTML = '';
+
+                // Create option buttons
+                question.options.forEach((option, i) => {
+                    const button = document.createElement('button');
+                    button.textContent = option;
+                    button.classList.add('w-full', 'text-left', 'p-4', 'border', 'border-gray-300', 'rounded-lg', 'transition-all', 'duration-200', 'hover:bg-indigo-50', 'hover:shadow-md', 'hover:-translate-y-1');
+                    button.dataset.option = option;
+                    optionsContainer.appendChild(button);
+                });
+
+                updateProgress();
+                handleButtonStates();
+
+                const userAnswer = userAnswers[index];
+                if (userAnswer !== null) {
+                    showPreviousAnswer(userAnswer);
+                } else {
+                     optionsContainer.addEventListener('click', handleOptionClick);
+                }
+            }
+            
+            function handleOptionClick(e) {
+                if (e.target.tagName === 'BUTTON') {
+                    const selectedOption = e.target.dataset.option;
+                    checkAnswer(selectedOption);
+                    optionsContainer.removeEventListener('click', handleOptionClick);
+                }
+            }
+
+            function checkAnswer(selectedOption) {
+                const isCorrect = selectedOption === quizData[currentQuestionIndex].answer;
+                
+                userAnswers[currentQuestionIndex] = {
+                    selected: selectedOption,
+                    correct: isCorrect
+                };
+
+                if (isCorrect) {
+                    score++;
+                    feedbackMessageEl.textContent = 'Correct!';
+                    feedbackMessageEl.classList.add('text-green-600');
+                } else {
+                    const correctOption = quizData[currentQuestionIndex].answer;
+                    const correctOptionLetter = String.fromCharCode(65 + quizData[currentQuestionIndex].options.indexOf(correctOption));
+                    feedbackMessageEl.textContent = `Wrong! The correct answer is ${correctOptionLetter}: ${correctOption}`;
+                    feedbackMessageEl.classList.add('text-red-600');
+                }
+                
+                updateScore();
+                highlightAnswers();
+                nextBtnContainer.classList.remove('hidden');
+            }
+
+            function showPreviousAnswer(answer) {
+                highlightAnswers();
+                const { correct, selected } = answer;
+                 if (correct) {
+                    feedbackMessageEl.textContent = 'Correct!';
+                    feedbackMessageEl.classList.add('text-green-600');
+                } else {
+                    const correctOption = quizData[currentQuestionIndex].answer;
+                    const correctOptionLetter = String.fromCharCode(65 + quizData[currentQuestionIndex].options.indexOf(correctOption));
+                    feedbackMessageEl.textContent = `Wrong! The correct answer is ${correctOptionLetter}: ${correctOption}`;
+                    feedbackMessageEl.classList.add('text-red-600');
+                }
+                nextBtnContainer.classList.remove('hidden');
+            }
+
+            function highlightAnswers() {
+                const buttons = optionsContainer.querySelectorAll('button');
+                const correctAnswer = quizData[currentQuestionIndex].answer;
+                const userAnswer = userAnswers[currentQuestionIndex];
+
+                buttons.forEach(button => {
+                    button.disabled = true;
+                    const option = button.dataset.option;
+
+                    // Reset styles
+                    button.classList.remove('bg-green-500', 'bg-red-500', 'text-white', 'border-green-600', 'border-red-600');
+
+                    if (option === correctAnswer) {
+                        button.classList.add('bg-green-500', 'text-white', 'border-green-600');
+                    } else if (option === userAnswer.selected) {
+                        button.classList.add('bg-red-500', 'text-white', 'border-red-600');
+                    }
+                });
+            }
+
+            function updateProgress() {
+                questionNumberEl.textContent = currentQuestionIndex + 1;
+                const progressPercentage = ((currentQuestionIndex + 1) / quizData.length) * 100;
+                progressBar.style.width = `${progressPercentage}%`;
+            }
+
+            function updateScore() {
+                scoreEl.textContent = score;
+            }
+
+            function handleButtonStates() {
+                prevBtn.disabled = currentQuestionIndex === 0;
+            }
+
+            function showResults() {
+                quizHeader.classList.add('hidden');
+                questionArea.classList.add('hidden');
+                resultScreen.classList.remove('hidden');
+                resultScreen.classList.add('fade-in');
+                finalScoreEl.textContent = `Your final score is ${score} out of ${quizData.length}.`;
+            }
+
+            function resetQuiz() {
+                currentQuestionIndex = 0;
+                score = 0;
+                userAnswers.fill(null);
+                updateScore();
+                resultScreen.classList.add('hidden');
+                quizHeader.classList.remove('hidden');
+                questionArea.classList.remove('hidden');
+                startQuiz();
+            }
+
+            // --- EVENT LISTENERS ---
+            nextBtn.addEventListener('click', () => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < quizData.length) {
+                    loadQuestion(currentQuestionIndex);
+                } else {
+                    showResults();
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentQuestionIndex > 0) {
+                    currentQuestionIndex--;
+                    loadQuestion(currentQuestionIndex);
+                }
+            });
+
+            jumpBtn.addEventListener('click', () => {
+                const questionNum = parseInt(jumpInput.value);
+                if (questionNum >= 1 && questionNum <= quizData.length) {
+                    currentQuestionIndex = questionNum - 1;
+                    loadQuestion(currentQuestionIndex);
+                    jumpInput.value = '';
+                } else {
+                    alert(`Please enter a number between 1 and ${quizData.length}.`);
+                }
+            });
+
+            jumpInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    jumpBtn.click();
+                }
+            });
+
+            resetScoreBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to reset your score? This action cannot be undone.')) {
+                    score = 0;
+                    updateScore();
+                }
+            });
+
+            restartBtn.addEventListener('click', resetQuiz);
+
+            // --- INITIALIZATION ---
+            startQuiz();
+        });
+    </script>
+</body>
+</html>
